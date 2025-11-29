@@ -1,33 +1,23 @@
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
-import { getProductById } from "../data/products.js";
+import { useParams, Link } from "react-router-dom";
+import { db } from "../firebase/config.js";
+import { doc, getDoc } from "firebase/firestore";
 import ItemDetail from "./ItemDetail.jsx";
 
-const ItemDetailContainer = () => {
-    const [product, setProduct] = useState(null);
-    const [loading, setLoading] = useState(true);
+export default function ItemDetailContainer() {
     const { id } = useParams();
+    const [item, setItem] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         setLoading(true);
-
-        getProductById(id)
-            .then((res) => setProduct(res))
-            .catch((err) => {
-                console.error(err);
-                setProduct(null);
-            })
+        getDoc(doc(db, "products", id))
+            .then((snap) => setItem(snap.exists() ? { id: snap.id, ...snap.data() } : null))
             .finally(() => setLoading(false));
-    }, [id]); //
+    }, [id]);
 
     if (loading) return <p className="loading">Cargando producto...</p>;
-    if (!product) return <p>No se encontró el producto.</p>;
+    if (!item) return <p>Producto no encontrado. <Link to="/">Volver</Link></p>;
 
-    return (
-        <section className="item-detail-container">
-            <ItemDetail {...product} />
-        </section>
-    );
-};
-
-export default ItemDetailContainer;
+    return <ItemDetail item={item} />;
+}
